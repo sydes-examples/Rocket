@@ -13,7 +13,15 @@ impl PasteId<'_> {
     /// the characters used are from the sets [0-9], [A-Z], [a-z]. The
     /// probability of a collision depends on the value of `size` and the number
     /// of IDs generated thus far.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `size` is `0`: a zero-length ID can never round-trip through
+    /// `FromParam` (an empty path segment is not a valid paste ID), so it is
+    /// never useful to generate one.
     pub fn new(size: usize) -> PasteId<'static> {
+        assert!(size > 0, "PasteId::new: `size` must be greater than 0");
+
         const BASE62: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
         let mut id = String::with_capacity(size);

@@ -8,6 +8,12 @@ fn extract_id(from: &str) -> Option<String> {
 }
 
 #[test]
+#[should_panic(expected = "`size` must be greater than 0")]
+fn new_rejects_zero_size() {
+    PasteId::new(0);
+}
+
+#[test]
 fn check_index() {
     let client = Client::tracked(rocket()).unwrap();
 
