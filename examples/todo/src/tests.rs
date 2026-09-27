@@ -70,6 +70,41 @@ fn test_insertion_deletion() {
 }
 
 #[test]
+fn test_delete_nonexistent_id_is_error() {
+    run_test!(|client, conn| {
+        // Get the tasks before making changes.
+        let init_tasks = Task::all(&conn).await.unwrap();
+
+        // Issue a request to insert a new task.
+        client.post("/todo")
+            .header(ContentType::Form)
+            .body("description=to_be_deleted_twice")
+            .dispatch()
+            .await;
+
+        let tasks = Task::all(&conn).await.unwrap();
+        let id = tasks[0].id.unwrap();
+
+        // Delete the task. This should succeed and redirect to the index.
+        let res = client.delete(format!("/todo/{}", id)).dispatch().await;
+        assert_eq!(res.status(), Status::SeeOther);
+
+        // Ensure it's actually gone.
+        let final_tasks = Task::all(&conn).await.unwrap();
+        assert_eq!(final_tasks.len(), init_tasks.len());
+
+        // Issue a request to delete the same, now-nonexistent, id again. This
+        // should be treated as an error (0 rows affected) instead of being
+        // reported as a successful deletion.
+        let res = client.delete(format!("/todo/{}", id)).dispatch().await;
+        assert_eq!(res.status(), Status::Ok);
+
+        let body = res.into_string().await.unwrap();
+        assert!(body.contains("Task not found."));
+    })
+}
+
+#[test]
 fn test_toggle() {
     run_test!(|client, conn| {
         // Issue a request to insert a new task; ensure it's not yet completed.

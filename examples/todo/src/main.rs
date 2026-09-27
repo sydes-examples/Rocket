@@ -77,6 +77,10 @@ async fn toggle(id: i32, conn: DbConn) -> Result<Redirect, Template> {
 #[delete("/<id>")]
 async fn delete(id: i32, conn: DbConn) -> Result<Flash<Redirect>, Template> {
     match Task::delete_with_id(id, &conn).await {
+        Ok(0) => {
+            error!("DB deletion({id}) error: no task with that id");
+            Err(Template::render("index", Context::err(&conn, "Task not found.").await))
+        }
         Ok(_) => Ok(Flash::success(Redirect::to("/"), "Todo was deleted.")),
         Err(e) => {
             error!("DB deletion({id}) error: {e}");
